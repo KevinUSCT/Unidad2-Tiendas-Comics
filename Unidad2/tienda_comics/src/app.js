@@ -9,6 +9,9 @@ const app = express();
 // Middleware: permite leer el cuerpo de las peticiones en formato JSON
 app.use(express.json());
 
+// Sirve el cliente web (index.html, detalle.html, css y js)
+app.use(express.static("public"));
+
 // Ruta de prueba
 app.get("/", (req, res) => {
   res.json({ mensaje: "API de la Tienda de Cómics funcionando" });

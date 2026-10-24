@@ -48,6 +48,11 @@ export function listarComics(filtros = {}) {
   return peticion(`/comics${query ? `?${query}` : ""}`);
 }
 
+// GET /api/comics/:id
+export function obtenerComic(id) {
+  return peticion(`/comics/${id}`);
+}
+
 // POST /api/comics
 export function crearComic(comic) {
   return peticion("/comics", {

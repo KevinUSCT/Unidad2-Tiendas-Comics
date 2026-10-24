@@ -48,6 +48,31 @@ function limpiarVacios(objeto) {
   );
 }
 
+// Devuelve un texto con el error, o null si todo está bien
+function validarComic(datos) {
+  if (!datos.titulo || datos.titulo.trim().length < 2) {
+    return "El título debe tener al menos 2 caracteres";
+  }
+  if (!datos.autor) {
+    return "Debe seleccionar un autor";
+  }
+  if (!Number.isFinite(datos.precio) || datos.precio <= 0) {
+    return "El precio debe ser mayor a cero";
+  }
+  if (datos.anioPublicacion !== undefined) {
+    const anioActual = new Date().getFullYear();
+    if (!Number.isInteger(datos.anioPublicacion) ||
+        datos.anioPublicacion < 1900 ||
+        datos.anioPublicacion > anioActual) {
+      return `El año debe estar entre 1900 y ${anioActual}`;
+    }
+  }
+  if (datos.stock !== undefined && (!Number.isInteger(datos.stock) || datos.stock < 0)) {
+    return "El stock debe ser un número entero mayor o igual a cero";
+  }
+  return null;
+}
+
 // Formatea números como pesos colombianos: 65000 → $ 65.000
 const formatoPeso = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -82,9 +107,14 @@ function renderComics(comics) {
     return;
   }
 
-  comics.forEach((comic) => {
+    comics.forEach((comic) => {
     const tarjeta = document.createElement("article");
     tarjeta.className = "comic";
+
+    const enlace = document.createElement("a");
+    enlace.href = `detalle.html?id=${encodeURIComponent(comic._id)}`;
+    enlace.textContent = "Ver detalle";
+    enlace.className = "enlace-detalle";
 
     tarjeta.append(
       crearElemento("h3", comic.titulo),
@@ -94,13 +124,13 @@ function renderComics(comics) {
         [comic.editorial, comic.anioPublicacion].filter(Boolean).join(" · ")
       ),
       crearElemento("p", formatoPeso.format(comic.precio), "precio"),
-      crearElemento("p", `Stock: ${comic.stock}`)
+      crearElemento("p", `Stock: ${comic.stock}`),
+      enlace
     );
 
     listaComics.append(tarjeta);
   });
 }
-
 // ============================================================
 // 4. Cargar datos desde la API
 // ============================================================
@@ -158,6 +188,20 @@ btnLimpiar.addEventListener("click", async () => {
   }
 });
 
+// --- Filtrar automáticamente al cambiar un <select> ---
+async function buscarConAviso() {
+  try {
+    await buscar();
+  } catch (error) {
+    mostrarMensaje(error.message, "error");
+  }
+}
+
+filtroAutor.addEventListener("change", buscarConAviso);
+filtroEditorial.addEventListener("change", buscarConAviso);
+
+
+
 // --- Agregar autor ---
 formAutor.addEventListener("submit", async (evento) => {
   evento.preventDefault();
@@ -183,8 +227,14 @@ formComic.addEventListener("submit", async (evento) => {
 
     // FormData entrega todo como texto: convertimos los campos numéricos
     datos.precio = Number(datos.precio);
+   
     if (datos.anioPublicacion) datos.anioPublicacion = Number(datos.anioPublicacion);
     if (datos.stock) datos.stock = Number(datos.stock);
+     const errorValidacion = validarComic(datos);
+    if (errorValidacion) {
+      mostrarMensaje(errorValidacion, "error");
+      return;
+    }
 
     const comic = await crearComic(datos);
 
